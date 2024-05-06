@@ -6,5 +6,6 @@ SRC = f'{ROOT}/src'
 DATA = f'{ROOT}/data'
 PLOTS = f'{ROOT}/plots'
 
-# Second-order directories in DATA
+# High-order directories in DATA
 INTERACTORS = f'{DATA}/Interactors'
+UNIPROT_STRUCTURES = f'{DATA}/Structures/UniProt'

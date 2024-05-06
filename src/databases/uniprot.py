@@ -3,7 +3,6 @@ import os
 import subprocess
 
 # Third-party modules
-from tqdm import tqdm
 from bioservices.uniprot import UniProt as UniProtAPI
 
 # Custom modules
@@ -17,7 +16,7 @@ class UniProt:
     # Initialize UniProt API
     uniprot_api = UniProtAPI(verbose = False)
 
-    def fill_sequences() -> None:
+    def fill_sequences(self) -> None:
         '''
         Download the sequences of all the MIKC proteins found with InterPro from
         the UniProt database and add them to the Interactor objects.
@@ -33,7 +32,7 @@ class UniProt:
         
         # Logging
         n_interactors = len(os.listdir(path.INTERACTORS))
-        logger.info(f'{len(n_interactors)} sequences have been obtained from UniProt')
+        logger.info(f'{n_interactors} sequences have been obtained from UniProt')
 
     def __parse_uniprot_entry(self, interactor: Interactor) -> None:
         '''
@@ -53,7 +52,7 @@ class UniProt:
         '''
         # Retrieve UniProt data
         entry_json = UniProt.uniprot_api.retrieve(
-            uniprot_id = self.uniprot_id, 
+            uniprot_id = interactor.uniprot_id, 
             frmt = 'json',
             database = 'uniprot'
             )
@@ -65,7 +64,7 @@ class UniProt:
         interactor.uniprot_info['Secondary Accessions'] = entry_json.get('secondaryAccessions')
         
         # Logging
-        logger.info(f'{self.uniprot_id} has {self.uniprot_info=}')
+        logger.info(f'{interactor.uniprot_id} has {interactor.uniprot_info=}')
 
     def fill_metadata(self) -> None:
         '''
@@ -81,16 +80,16 @@ class UniProt:
         
         # Logging
         n_interactors = len(os.listdir(path.INTERACTORS))
-        logger.info(f'{len(n_interactors)} metadata have been obtained from UniProt')
+        logger.info(f'{n_interactors} metadata have been obtained from UniProt')
 
-    def download_structures(interactors: list[Interactor]) -> None:
+    def download_structures(self) -> None:
         '''
         Download AlphaFold structures of all the MIKC proteins found with 
         InterPro from the AlphaFold database.
         '''
-        for interactor in tqdm(interactors):
+        for interactor in utils.iterate_folder(path.INTERACTORS):
             # Download response from AlphaFold database
-            structure_path = f'{path.AF}/{interactor.uniprot_id}.pdb'
+            structure_path = f'{path.UNIPROT_STRUCTURES}/{interactor.uniprot_id}.pdb'
             cmd = f'curl "https://alphafold.ebi.ac.uk/files/AF-{interactor.uniprot_id}-F1-model_v4.pdb"'
             response = subprocess.run(cmd, capture_output = True, text = True, shell = True).stdout
 
@@ -100,13 +99,13 @@ class UniProt:
                     handle.write(response)
 
         # Logging
-        n_pdb_files = len(os.listdir(path.AF))
-        logger.info(f'{n_pdb_files} AlphaFold files have been downloaded out of {len(interactors)}')
+        n_pdb_files = len(os.listdir(path.UNIPROT_STRUCTURES))
+        n_interactors = len(os.listdir(path.INTERACTORS))
+        logger.info(f'{n_pdb_files} AlphaFold files have been downloaded out of {n_interactors} MIKC proteins')
 
 if __name__ == '__main__':
     '''Test class'''
     uniprot = UniProt()
-    uniprot.fill_sequences()
-    uniprot.fill_metadata()
+    #uniprot.fill_sequences()
+    #uniprot.fill_metadata()
     uniprot.download_structures()
-    
