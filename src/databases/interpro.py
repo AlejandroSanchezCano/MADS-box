@@ -39,9 +39,9 @@ class InterPro:
 
     def __get_source_database(self) -> str:
         '''
-        Parses the Interpro accession ID to find what database it belongs to
-        within InterPro (CDD, Profile, Panther, PFAM ...). It returns the 
-        corresponding string used in API requests.
+        Parses the Interpro accession ID to find what database it 
+        belongs to within InterPro (CDD, Profile, Panther, PFAM ...). 
+        It returns the corresponding string used in API requests.
 
         Returns
         -------
@@ -70,8 +70,8 @@ class InterPro:
 
     def __request(self, url: str) -> dict[str, Any]:
         '''
-        Given an InterPro API url, performs a request and returns the response
-        as a python-interactable JSON. 
+        Given an InterPro API url, performs a request and returns the 
+        response as a python-interactable JSON. 
 
         Parameters
         ----------
@@ -88,9 +88,9 @@ class InterPro:
     
     def get_metadata(self) -> None:
         '''
-        Performs an InterPro API request to retrieve the name of the accession
-        and the number of UniProt and AlphaFold accessions it contains. Updates
-        'self.name' and 'self.number_of' attributes.
+        Performs an InterPro API request to retrieve the name of the 
+        accession and the number of UniProt and AlphaFold accessions it 
+        contains. Updates 'self.name' and 'self.number_of' attributes.
         '''
         # Request to InterPro API
         url = f'{InterPro.url}/entry/interpro/{self.accession}'
@@ -107,8 +107,8 @@ class InterPro:
 
     def __get_domains(self, json_result: dict[str, Any]) -> list[tuple[int, int]]: # Interesting -> A0A061FZ27 has two K-box domains!!
         '''
-        Inspect the JSON info of the InterPro protein to retrieve the domain
-        bounds. 
+        Inspect the JSON info of the InterPro protein to retrieve the 
+        domain bounds. 
 
         Parameters
         ----------
@@ -138,8 +138,9 @@ class InterPro:
 
     def get_uniprot(self, batch_size: int = 200) -> None:
         '''
-        Use InterPro API to retrieve necessary the UniProt IDs, taxons and 
-        domains of the proteins belonging to the self.accession InterPro ID.
+        Use InterPro API to retrieve necessary the UniProt IDs, taxons 
+        and domains of the proteins belonging to the self.accession 
+        InterPro ID.
 
         Parameters
         ----------
@@ -180,16 +181,17 @@ class InterPro:
 
     def __and__(self, other) -> list[Interactor]:
         '''
-        Manages intersection behaviour between the Interactor of two InterPro
-        instances. It is used to find the MIKC proteins from the MADS-containing
-        proteins and the K-box-containing proteins.
-        If slow, try "awk 'NR==FNR{arr[$0];next} $0 in arr' %s.txt %s.txt | wc -l"
+        Manages intersection behaviour between the Interactor of two 
+        InterPro instances. It is used to find the MIKC proteins from 
+        the MADS-containing proteins and the K-box-containing proteins.
+        If slow, try:
+        "awk 'NR==FNR{arr[$0];next} $0 in arr' %s.txt %s.txt | wc -l"
 
         Returns
         -------
         list[Interactor]
-            List of Interactor objects corresponding to the common ones shared
-            by two InterPro instances.
+            List of Interactor objects corresponding to the common ones 
+            shared by two InterPro instances.
         '''
         return list(set(self.interactors) & set(other.interactors))
 

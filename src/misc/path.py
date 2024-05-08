@@ -9,3 +9,7 @@ PLOTS = f'{ROOT}/plots'
 # High-order directories in DATA
 INTERACTORS = f'{DATA}/Interactors'
 UNIPROT_STRUCTURES = f'{DATA}/Structures/UniProt'
+
+# Databases
+DATABASES = f'{DATA}/Databases'
+BIOGRID = f'{DATABASES}/BioGRID'

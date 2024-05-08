@@ -18,8 +18,9 @@ class UniProt:
 
     def fill_sequences(self) -> None:
         '''
-        Download the sequences of all the MIKC proteins found with InterPro from
-        the UniProt database and add them to the Interactor objects.
+        Download the sequences of all the MIKC proteins found with 
+        InterPro from the UniProt database and add them to the 
+        Interactor objects.
         '''
         for interactor in utils.iterate_folder(path.INTERACTORS):
             # Download FASTA from UniProt database
@@ -36,14 +37,17 @@ class UniProt:
 
     def __parse_uniprot_entry(self, interactor: Interactor) -> None:
         '''
-        Uses BioServices' UniProt API wrapper to retrieve relevant information, 
-        stored in the "uniprot_info()" attribute:
+        Uses BioServices' UniProt API wrapper to retrieve relevant 
+        information, stored in the "uniprot_info()" attribute:
         - self.uniprot_info['Section'] -> Swiss-Prot or TrEMBL.
-        - self.uniprot_info['Primary Accession'] -> entry's primary accession
-        - self.uniprot_info['Secondary Accessions'] -> if applicable, entry's secondary accessions.
+        - self.uniprot_info['Primary Accession'] -> entry's primary 
+        accession
+        - self.uniprot_info['Secondary Accessions'] -> if applicable, 
+        entry's secondary accessions.
 
-        Same time complexity doing calls with individual or multiple UniProt IDs, 
-        so I opted to individual calls to match abstraction levels.
+        Same time complexity doing calls with individual or multiple 
+        UniProt IDs, so I opted to individual calls to match abstraction 
+        levels.
 
         Parameters
         ----------
@@ -68,8 +72,9 @@ class UniProt:
 
     def fill_metadata(self) -> None:
         '''
-        Download the metadata of all the MIKC proteins found with InterPro from
-        the UniProt database and add them to the Interactor objects.
+        Download the metadata of all the MIKC proteins found with 
+        InterPro from the UniProt database and add them to the 
+        Interactor objects.
         '''
         for interactor in utils.iterate_folder(path.INTERACTORS):
             # Download metadata from UniProt database
@@ -82,10 +87,10 @@ class UniProt:
         n_interactors = len(os.listdir(path.INTERACTORS))
         logger.info(f'{n_interactors} metadata have been obtained from UniProt')
 
-    def download_structures(self) -> None:
+    def download_structures(self) -> None: 
         '''
-        Download AlphaFold structures of all the MIKC proteins found with 
-        InterPro from the AlphaFold database.
+        Download AlphaFold structures (14106) of all the MIKC proteins 
+        found with InterPro (17090) from the AlphaFold database.
         '''
         for interactor in utils.iterate_folder(path.INTERACTORS):
             # Download response from AlphaFold database

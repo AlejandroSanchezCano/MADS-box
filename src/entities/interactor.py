@@ -12,7 +12,7 @@ from src.misc import utils
 class Interactor:
 
     # Initialize NCBI taxonomy tree
-    ncbi_tx = NcbiTx()
+    #ncbi_tx = NcbiTx()
 
     def __init__(self, **kwargs: dict[str, Any]):
         # Modified with 'InterPro' class
@@ -50,10 +50,10 @@ class Interactor:
 
     def __eq__(self, other: Interactor) -> bool:
         '''
-        Overrides the equal (==) operator by considering that two Interactor 
-        objects are equal if they have the same UniProt ID. Also, this is 
-        necessary along with the __hash__ dunder method for the functionality of
-        sets.
+        Overrides the equal (==) operator by considering that two 
+        Interactor objects are equal if they have the same UniProt ID. 
+        Also, this is necessary along with the __hash__ dunder method 
+        for the functionality of sets.
 
         Parameters
         ----------
@@ -63,14 +63,16 @@ class Interactor:
         Returns
         -------
         bool
-            Whether the same UniProt ID is shared by the Interactor objects.
+            Whether the same UniProt ID is shared by the Interactor 
+            objects.
         '''
         return self.uniprot_id == other.uniprot_id
     
     def __hash__(self) -> int:
         '''
-        Overrides the hash function by hashing the UniProt ID string. Also, this 
-        is necessary along with the __eq__ dunder method for the functionality 
+        Overrides the hash function by hashing the UniProt ID string. 
+        Also, this is necessary along with the __eq__ dunder method for
+        the functionality 
         of sets.
 
         Returns
@@ -95,28 +97,29 @@ class Interactor:
     def pickle(self) -> None:
         '''
         Pickles the __dict__ of the Interactor object.
-        Custom (un)pickling methods avoid excesive use of the utils module and
-        provides higher code abstraction. 
+        Custom (un)pickling methods avoid excesive use of the utils 
+        module and provides higher code abstraction. 
         '''
         filepath = f'{path.INTERACTORS}/{self.uniprot_id}.int'
         utils.pickling(data = self.__dict__, path = filepath)
 
     def unpickle(uniprot_id: str) -> Interactor:
         '''
-        Unpickles __dict__ of an Interactor object. Returns it reinstanciated.
-        Custom (un)pickling methods avoid excesive use of the utils module and
-        provides higher code abstraction. 
+        Unpickles __dict__ of an Interactor object. Returns it 
+        reinstanciated. Custom (un)pickling methods avoid excesive use 
+        of the utils module and provides higher code abstraction. 
         
         Parameters
         ----------
         uniprot_id : str
-            UniProt ID corresponding to the file to be unpickled. Both 'O22456'
-            and 'O22456.pkl' are managed.
+            UniProt ID corresponding to the file to be unpickled. Both 
+            'O22456' and 'O22456.pkl' are managed.
 
         Returns
         -------
         Interactor
-            Interactor object reinstanciated from unpickled __dict__ object.
+            Interactor object reinstanciated from unpickled __dict__ 
+            object.
         '''
         uniprot_id = uniprot_id if uniprot_id.endswith('int') else uniprot_id + '.int'
         filepath = f'{path.INTERACTORS}/{uniprot_id}'
