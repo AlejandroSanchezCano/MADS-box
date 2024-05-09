@@ -1,11 +1,12 @@
 # Built-in modules
 import os
+import re
 import subprocess
 from io import StringIO
 
 # Third-party modules
 import pandas as pd
-from tqdm import tqdm
+from multitax import NcbiTx
 
 # Custom modules
 from src.misc import path
@@ -40,11 +41,35 @@ class BioGRID:
         subprocess.run(rm, shell = True)
 
         # Logging
-        logger.info(f'BioGRID {self.version} files downloaded and unzipped')
+        logger.info(f'BioGRID {self.version} "ALL" file downloaded and unzipped')
+
+    def reduce_to_plants(self) -> None:
+        '''
+        Reduces BioGRID 'ALL' file to only plant interactors to
+        reduce computational burden when searching for UniProt IDs with
+        grep in the whole file.
+        '''
+
+        # Set up file paths
+        all_filepath = f'{path.BIOGRID}/{self.version}/BIOGRID-ALL-{self.version}.tab3.txt'
+        plant_filepath = f'{path.BIOGRID}/{self.version}/BIOGRID-plants-{self.version}.tab3.txt'
+
+        # Read BioGRID 'ALL' file as pandas DataFrame
+        df = pd.read_csv(all_filepath, sep = '\t', dtype=str)
+
+        # Filter only plant interactors
+        ncbi_tx = NcbiTx()
+        df_plants = df[df['Organism ID Interactor A'].apply(lambda x: 'Viridiplantae' in ncbi_tx.name_lineage(x))]
+
+        # Save filtered file
+        df_plants.to_csv(plant_filepath, sep = '\t', index = False)
+
+        # Logging
+        logger.info(f'BioGRID {self.version} "ALL" file ({len(df)} PPIs) reduced to only plant interactions ({len(df_plants)} PPIs)')
 
     def _grep(self, uniprot_id: str) -> pd.DataFrame:
         '''
-        Searches for a specific UniProt ID in the BioGRID 'ALL' file and
+        Searches for a specific UniProt ID in the BioGRID 'plants' file and
         retrieves its interactions in BioGRID.
 
         Parameters
@@ -59,13 +84,12 @@ class BioGRID:
         '''
 
         # Set up file path
-        file_path = f'{path.BIOGRID}/{self.version}/BIOGRID-ALL-{self.version}.tab3.txt'
+        file_path = f'{path.BIOGRID}/{self.version}/BIOGRID-plants-{self.version}.tab3.txt'
 
         # First line as columns
         cat = f'head -1 {file_path}'
         result = subprocess.run(cat, shell = True, text = True, stdout = subprocess.PIPE)
         columns = result.stdout.lstrip('#').rstrip().split('\t')
-        print(columns)
 
         # Search for UniProt ID in BioGRID 'ALL' file
         grep = f'grep {uniprot_id} {file_path}'
@@ -76,48 +100,68 @@ class BioGRID:
             return pd.DataFrame(columns = columns)
         else:
             result = StringIO(result.stdout)
-            df = pd.read_csv(result, sep = '\t', header = None)
-            df.columns = columns
-            return df
+            return pd.read_csv(result, sep = '\t', names = columns)
+        
+    def mads_vs_all(self) ->  None:
+        '''
+        Searches for MADS interactors in the BioGRID 'plants' file and
+        retrieves their interactions in BioGRID.
+        '''
+        # Initialize DataFrame
+        mads_vs_all = pd.DataFrame()
 
-    def test(self):
+        # Iterate over MADS interactors
         for interactor in utils.iterate_folder(path.INTERACTORS):
-            df = biogrid._grep(interactor.uniprot_id)
+            # Search for UniProt ID in BioGRID 'plants' file
+            df = self._grep(interactor.uniprot_id)
+            # Append to DataFrame if not empty
+            if not df.empty:
+                mads_vs_all = pd.concat([mads_vs_all, df], ignore_index = True)
+        
+        # Save DataFrame
+        filepath = f'{path.NETWORKS}/BioGRID_{self.version}_MADS_vs_ALL.tsv'
+        mads_vs_all.to_csv(filepath, sep = '\t', index = False)
 
-    def test2(self):
-        df = biogrid.full()
-        from multitax import NcbiTx
-        ncbi_tx = NcbiTx()
-        df = df[df['Organism ID Interactor A'].apply(lambda x: 'Viridiplantae' in ncbi_tx.name_lineage(x))]
+        # Logging
+        logger.info(f'MADS vs. all PPIs in BioGRID {self.version} "plants" file -> dim({mads_vs_all.shape})')
 
-        print(df['Organism ID Interactor A'].unique())
-        df.to_csv('out.csv', index=False, sep = '\t') 
+    def mads_vs_mads(self) -> None:
 
-    def test3(self):
-        for interactor in utils.iterate_folder(path.INTERACTORS, start = 12000):
-            grep = f'grep {interactor.uniprot_id} out.csv'
-            result = subprocess.run(grep, shell = True, text = True, stdout = subprocess.PIPE)
-            if result.stdout != '':
-                print(interactor.uniprot_id)
+        # Load MADS_vs_ALL DataFrame
+        filepath = f'{path.NETWORKS}/BioGRID_{self.version}_MADS_vs_ALL.tsv'
+        mads_vs_all = pd.read_csv(filepath, sep = '\t')
 
+        # MADS UniProt IDs
+        mads = set([interactor.uniprot_id for interactor in utils.iterate_folder(path.INTERACTORS)])
 
-    def full(self): #(2685273, 37) #83004
-        file_path = f'{path.BIOGRID}/{self.version}/BIOGRID-ALL-{self.version}.tab3.txt' 
+        # Concatenate UniProt IDs column A
+        uniprot_columns_A = ['SWISS-PROT Accessions Interactor A', 'TREMBL Accessions Interactor A']
+        concatenate = lambda row: '|'.join(row).replace('-|', '').rstrip('|-').split('|')
+        uniprot_ids_A = mads_vs_all[uniprot_columns_A].apply(concatenate, axis = 1)
+        is_there_mikc = lambda x: len(set(x) - mads) < len(x)
+        mads_vs_mads_A = uniprot_ids_A.apply(is_there_mikc)
 
-        cat = f'head -1 {file_path}'
-        result = subprocess.run(cat, shell = True, text = True, stdout = subprocess.PIPE)
-        columns = result.stdout.lstrip('#').rstrip().split('\t')
+        # Concatenate UniProt IDs column B
+        uniprot_columns_B = ['SWISS-PROT Accessions Interactor B', 'TREMBL Accessions Interactor B']
+        concatenate = lambda row: '|'.join(row).replace('-|', '').rstrip('|-').split('|')
+        uniprot_ids_B = mads_vs_all[uniprot_columns_B].apply(concatenate, axis = 1)
+        is_there_mikc = lambda x: len(set(x) - mads) < len(x)
+        mads_vs_mads_B = uniprot_ids_B.apply(is_there_mikc)
 
-        file_path = f'{path.BIOGRID}/{self.version}/BIOGRID-ALL-{self.version}.tab3.txt' 
-        cat = f'cat {file_path}'
-        result = subprocess.run(cat, shell = True, text = True, stdout = subprocess.PIPE)
-        df = pd.read_csv(StringIO(result.stdout), sep = '\t', names = columns, dtype=str)
-        return df
+        # Filter MADS vs MADS interactions
+        mads_vs_mads = mads_vs_all[mads_vs_mads_A & mads_vs_mads_B]
+
+        # Save DataFrame
+        filepath = f'{path.NETWORKS}/BioGRID_{self.version}_MADS_vs_MADS.tsv'
+        mads_vs_mads.to_csv(filepath, sep = '\t', index = False)
+
+        # Logging
+        logger.info(f'MADS vs. MADS PPIs in BioGRID {self.version} "plants" file -> dim({mads_vs_mads.shape})')
 
 if __name__ == '__main__':
+    '''Test class'''
     biogrid = BioGRID('4.4.233')
-    #biogrid.download_files()
-    #df = biogrid._grep('O22456')
-    #print(df['Organism ID Interactor A'])
-    #biogrid.test()
-    df = biogrid.test3()
+    # biogrid.download_files()
+    # biogrid.reduce_to_plants()
+    biogrid.mads_vs_all()
+    biogrid.mads_vs_mads()
