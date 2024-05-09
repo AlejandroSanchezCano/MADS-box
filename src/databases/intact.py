@@ -128,7 +128,10 @@ class IntAct:
         logger.info(f'MADS vs. all PPIs in IntAct {self.version} "plants" file -> dim({mads_vs_all.shape})')
 
     def mads_vs_mads(self) -> None:
-        
+        '''
+        Filters MADS vs. MADS interactions from the MADS vs. ALL 
+        interactions.
+        '''
         # Load MADS_vs_ALL DataFrame
         filepath = f'{path.NETWORKS}/IntAct_{self.version}_MADS_vs_ALL.tsv'
         mads_vs_all = pd.read_csv(filepath, sep = '\t')
