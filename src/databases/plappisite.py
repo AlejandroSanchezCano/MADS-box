@@ -74,7 +74,7 @@ class PlaPPISite:
         mads_vs_all = pd.DataFrame()
 
         # Retrieve PPI table of all MADS proteins   
-        for interactor in utils.iterate_folder(path.INTERACTORS, start = 16000):
+        for interactor in utils.iterate_folder(path.INTERACTORS, start = 17000):
             soup = self._soupify(interactor.uniprot_id)
             table = self._get_table(soup)
             non_predicted_table = table[table['PPI source'].apply(lambda x: x not in ['Predicted', 'prediction'])]
@@ -95,7 +95,7 @@ class PlaPPISite:
         Filters MADS vs. MADS interactions from the MADS vs. ALL
         '''
         # Load MADS_vs_ALL DataFrame
-        filepath = f'{path.NETWORKS}/IntAct_{self.version}_MADS_vs_ALL.tsv'
+        filepath = f'{path.NETWORKS}/PlaPPISIte_MADS_vs_ALL.tsv'
         mads_vs_all = pd.read_csv(filepath, sep = '\t')
 
         # MADS UniProt IDs
@@ -109,8 +109,10 @@ class PlaPPISite:
         filepath = f'{path.NETWORKS}/PlaPPISite_MADS_vs_MADS.tsv'
         mads_vs_mads.to_csv(filepath, sep = '\t', index = False)
 
+        # Loggi
+
 if __name__ == '__main__':
     '''Test class'''
     plappisite = PlaPPISite()
     plappisite.mads_vs_all()
-    plappisite.mads_vs_mads()
+    # plappisite.mads_vs_mads()

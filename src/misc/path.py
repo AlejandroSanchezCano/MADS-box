@@ -10,6 +10,7 @@ PLOTS = f'{ROOT}/plots'
 INTERACTORS = f'{DATA}/Interactors'
 UNIPROT_STRUCTURES = f'{DATA}/Structures/UniProt'
 NETWORKS = f'{DATA}/Networks'
+LITERATUREMINING = f'{DATA}/LiteratureMining'
 
 # Databases
 DATABASES = f'{DATA}/Databases'

@@ -125,12 +125,13 @@ class IntAct:
         mads_vs_all.to_csv(filepath, sep = '\t', index = False)   
 
         # Logging
-        logger.info(f'MADS vs. all PPIs in IntAct {self.version} "plants" file -> dim({mads_vs_all.shape})')
+        logger.info(f'MADS vs. all PPIs in IntAct {self.version} "plants" file -> dim{mads_vs_all.shape}')
 
     def mads_vs_mads(self) -> None:
         '''
         Filters MADS vs. MADS interactions from the MADS vs. ALL 
-        interactions.
+        interactions by checking whether any of the UniProt IDs are in 
+        the MIKC list from InterPro.
         '''
         # Load MADS_vs_ALL DataFrame
         filepath = f'{path.NETWORKS}/IntAct_{self.version}_MADS_vs_ALL.tsv'
@@ -140,22 +141,53 @@ class IntAct:
         mads = set([interactor.uniprot_id for interactor in utils.iterate_folder(path.INTERACTORS)])
 
         # Filter MADS vs MADS interactions
-        is_there_mikc = lambda x: set(x.split('-')[0].split(':')[1]).issubset(mads)
-        mads_vs_mads_A = mads_vs_all[mads_vs_all['ID(s) interactor A'].apply(is_there_mikc)]
-        mads_vs_mads_B = mads_vs_all[mads_vs_all['ID(s) interactor B'].apply(is_there_mikc)]
+        is_there_mikc = lambda x: x.split('-')[0].split(':')[1] in mads
+        mads_vs_mads_A = mads_vs_all['ID(s) interactor A'].apply(is_there_mikc)
+        mads_vs_mads_B = mads_vs_all['ID(s) interactor B'].apply(is_there_mikc)
         mads_vs_mads = mads_vs_all[mads_vs_mads_A & mads_vs_mads_B]
 
         # Save DataFrame
         filepath = f'{path.NETWORKS}/IntAct_{self.version}_MADS_vs_MADS.tsv'
+        mads_vs_mads.to_csv(filepath, sep = '\t', index = False)
 
         # Logging
-        logger.info(f'MADS vs. MADS PPIs in IntAct {self.version} "plants" file -> dim({mads_vs_mads.shape})')
+        logger.info(f'MADS vs. MADS PPIs in IntAct {self.version} "plants" file -> dim{mads_vs_mads.shape}')
+
+    def standarize(self) -> None:
+        '''
+        Format data frame interaction network to accommodate standard naming
+        convention of columns to homogenize the data frames from different 
+        databases. It contains:
+        - A: UniProt ID of interactor A
+        - B: UniProt ID of interactor B
+        - A-B: Concatenation of A and B sorted alphabetically
+        - Species_A: Species ID of interactor A
+        - Species_B: Species ID of interactor B
+        '''
+        # Load MADS_vs_MADS DataFrame
+        filepath = f'{path.NETWORKS}/IntAct_{self.version}_MADS_vs_MADS.tsv'
+        mads_vs_mads = pd.read_csv(filepath, sep = '\t')
+
+        # Assign columns
+        mads_vs_mads['A'] = mads_vs_mads['ID(s) interactor A'].apply(lambda x: x.split('-')[0].split(':')[1])
+        mads_vs_mads['B'] = mads_vs_mads['ID(s) interactor B'].apply(lambda x: x.split('-')[0].split(':')[1])
+        mads_vs_mads['A-B'] = mads_vs_mads[['A', 'B']].apply(lambda x: '-'.join(sorted(x)), axis = 1)
+        mads_vs_mads['Species_A'] = mads_vs_mads['Taxid interactor A'].apply(lambda x: re.split(r'[:\(]', x)[1])
+        mads_vs_mads['Species_B'] = mads_vs_mads['Taxid interactor B'].apply(lambda x: re.split(r'[:\(]', x)[1])
+
+        # Remove duplicated columns
+        mads_vs_mads = mads_vs_mads.drop_duplicates('A-B')
+
+        # Save DataFrame
+        filepath = f'{path.NETWORKS}/IntAct_{self.version}_MADS_vs_MADS_standarized.tsv'
+        mads_vs_mads[['A', 'B', 'A-B', 'Species_A', 'Species_B']].to_csv(filepath, sep = '\t', index = False)
 
 if __name__ == '__main__':
     '''Test class'''
     intact = IntAct('2024-02-14')
     # intact.download_files()
     # intact.reduce_to_plants()
-    intact.mads_vs_all()
-    intact.mads_vs_mads()
+    # intact.mads_vs_all()
+    # intact.mads_vs_mads()
+    intact.standarize()
 

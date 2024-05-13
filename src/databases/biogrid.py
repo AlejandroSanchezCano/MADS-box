@@ -12,6 +12,7 @@ from multitax import NcbiTx
 from src.misc import path
 from src.misc import utils
 from src.misc.logger import logger
+from src.entities.interactor import Interactor
 
 class BioGRID:
 
@@ -126,7 +127,11 @@ class BioGRID:
         logger.info(f'MADS vs. all PPIs in BioGRID {self.version} "plants" file -> dim({mads_vs_all.shape})')
 
     def mads_vs_mads(self) -> None:
-
+        '''
+        Filters MADS vs. MADS interactions from the MADS vs. ALL by 
+        checking whether any of the SWISS-PROT or TREMBL IDs is in the
+        MIKC list from InterPro.
+        '''
         # Load MADS_vs_ALL DataFrame
         filepath = f'{path.NETWORKS}/BioGRID_{self.version}_MADS_vs_ALL.tsv'
         mads_vs_all = pd.read_csv(filepath, sep = '\t')
@@ -158,10 +163,96 @@ class BioGRID:
         # Logging
         logger.info(f'MADS vs. MADS PPIs in BioGRID {self.version} "plants" file -> dim({mads_vs_mads.shape})')
 
+    def __find_best_uniprot_id_candidate(self, uniprot_ids: list[str]) -> str:
+        '''
+        Given a list of UniProt IDs, returns the best candidate to be 
+        used as the main UniProt ID in the database.
+
+        Parameters
+        ----------
+        uniprot_ids : list[str]
+            List of UniProt IDs to be considered.
+
+        Returns
+        -------
+        str
+            Main UniProt ID to be used
+        '''
+        # Initialize return list to be filled
+        candidate = []
+
+        # Iterate over UniProt IDs
+        for uniprot_id in uniprot_ids:
+
+            # Discard UniProt IDs not in database
+            try:
+                interactor = Interactor.unpickle(uniprot_id)
+            except FileNotFoundError:
+                continue
+            
+            # Discard TREBML
+            if interactor.uniprot_info['Section'] != 'Swiss-Prot':
+                continue
+            
+            # Append to candidate list
+            candidate.append(uniprot_id)
+        
+        # Logging and manage errors
+        if len(candidate) == 0:
+            logger.error(f'No valid UniProt ID candidates found in {uniprot_ids}')
+            return ''
+        elif len(candidate) > 1:
+            logger.error(f'More than one valid UniProt ID candidate found in {uniprot_ids} -> {candidate}')
+            return candidate[0]
+        else:
+            return candidate[0]
+
+    def standarize(self) -> None:
+        '''
+        Format data frame interaction network to accommodate standard naming
+        convention of columns to homogenize the data frames from different 
+        databases. It contains:
+        - A: UniProt ID of interactor A
+        - B: UniProt ID of interactor B
+        - A-B: Concatenation of A and B sorted alphabetically
+        - Species_A: Species ID of interactor A
+        - Species_B: Species ID of interactor B
+        '''
+        # Load MADS_vs_MADS DataFrame
+        filepath = f'{path.NETWORKS}/BioGRID_{self.version}_MADS_vs_MADS.tsv'
+        mads_vs_mads = pd.read_csv(filepath, sep = '\t')
+
+        # Find best UniProt ID candicate in column A
+        columns_uniprot_A = ['SWISS-PROT Accessions Interactor A', 'TREMBL Accessions Interactor A']
+        concatenate = lambda row: '|'.join(row).replace('-|', '').rstrip('|-').split('|')
+        uniprot_ids_A = mads_vs_mads[columns_uniprot_A].apply(concatenate, axis = 1).to_list()
+        A = [self.__find_best_uniprot_id_candidate(uniprot_ids) for uniprot_ids in uniprot_ids_A]
+
+        # Find best UniProt ID candicate in column B
+        columns_uniprot_B = ['SWISS-PROT Accessions Interactor B', 'TREMBL Accessions Interactor B']
+        concatenate = lambda row: '|'.join(row).replace('-|', '').rstrip('|-').split('|')
+        uniprot_ids_B = mads_vs_mads[columns_uniprot_B].apply(concatenate, axis = 1).to_list()
+        B = [self.__find_best_uniprot_id_candidate(uniprot_ids) for uniprot_ids in uniprot_ids_B]
+
+        # Assign columns
+        mads_vs_mads['A'] = A
+        mads_vs_mads['B'] = B
+        mads_vs_mads['A-B'] = mads_vs_mads[['A', 'B']].apply(lambda x: '-'.join(sorted(x)), axis = 1)
+        mads_vs_mads['Species_A'] = mads_vs_mads['Organism ID Interactor A']
+        mads_vs_mads['Species_B'] = mads_vs_mads['Organism ID Interactor B']
+
+        # Remove duplicated columns
+        mads_vs_mads = mads_vs_mads.drop_duplicates('A-B')
+        
+        # Save DataFrame
+        filepath = f'{path.NETWORKS}/BioGRID_{self.version}_MADS_vs_MADS_standarized.tsv'
+        mads_vs_mads[['A', 'B', 'A-B', 'Species_A', 'Species_B']].to_csv(filepath, sep = '\t', index = False)
+
 if __name__ == '__main__':
     '''Test class'''
     biogrid = BioGRID('4.4.233')
     # biogrid.download_files()
     # biogrid.reduce_to_plants()
-    biogrid.mads_vs_all()
-    biogrid.mads_vs_mads()
+    # biogrid.mads_vs_all()
+    # biogrid.mads_vs_mads()
+    biogrid.standarize()
