@@ -1,14 +1,11 @@
-# Built-in modules
-from collections import defaultdict
-
 # Third-party modules
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 # Custom modules
 from src.misc import path
 from src.misc.logger import logger
+from src.entities.interactor import Interactor
 
 class Network:
 
@@ -55,11 +52,17 @@ class Network:
         df_df = pd.concat([self.df, other.df], ignore_index = True)
         return Network.from_df(df_df.drop_duplicates('A-B'))
     
-    def statistics(self):
-        n_interactions = len(self.df)
-        n_interactors = len(set(self.df['A']) | set(self.df['B']))
+    def interactors(self) -> list[Interactor]:
+        '''
+        Return list of network interactors.
 
-        return n_interactions, n_interactors
+        Returns
+        -------
+        list[Interactor]
+            Interactors.
+        '''
+        unique_interactors = set(self.df['A']) | set(self.df['B'])
+        return [Interactor.unpickle(uniprot_id) for uniprot_id in unique_interactors]
     
 if __name__ == '__main__':
     '''Test class.'''
@@ -67,4 +70,5 @@ if __name__ == '__main__':
     biogrid = Network(db = 'BioGRID', version = '4.4.233', type = 'MADS_vs_MADS')
 
     both = intact.merge(biogrid)
-    print(both.statistics())
+    print(len(both.df))
+    print(len(both.interactors()))

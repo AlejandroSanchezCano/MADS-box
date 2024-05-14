@@ -7,8 +7,8 @@ import pandas as pd
 
 # Custom modules
 from src.misc import path
-from src.misc import utils
 from src.misc.logger import logger
+from src.entities.interactor import Interactor
 
 class PlaPPISite:
 
@@ -74,7 +74,7 @@ class PlaPPISite:
         mads_vs_all = pd.DataFrame()
 
         # Retrieve PPI table of all MADS proteins   
-        for interactor in utils.iterate_folder(path.INTERACTORS, start = 17000):
+        for interactor in Interactor.iterate_folder(path.INTERACTORS):
             soup = self._soupify(interactor.uniprot_id)
             table = self._get_table(soup)
             non_predicted_table = table[table['PPI source'].apply(lambda x: x not in ['Predicted', 'prediction'])]
@@ -99,7 +99,7 @@ class PlaPPISite:
         mads_vs_all = pd.read_csv(filepath, sep = '\t')
 
         # MADS UniProt IDs
-        mads = set([interactor.uniprot_id for interactor in utils.iterate_folder(path.INTERACTORS)])
+        mads = set([interactor.uniprot_id for interactor in Interactor.iterate_folder(path.INTERACTORS)])
 
         # Filter MADS vs. ALL DataFrame
         is_there_mikc = lambda x: set(x.split(' - ')).issubset(mads)

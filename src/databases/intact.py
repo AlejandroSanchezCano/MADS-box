@@ -10,8 +10,8 @@ from multitax import NcbiTx
 
 # Custom modules
 from src.misc import path
-from src.misc import utils
 from src.misc.logger import logger
+from src.entities.interactor import Interactor
 
 class IntAct:
 
@@ -113,7 +113,7 @@ class IntAct:
         mads_vs_all = pd.DataFrame()
 
         # Iterate over MADS interactors
-        for interactor in utils.iterate_folder(path.INTERACTORS):
+        for interactor in Interactor.iterate_folder(path.INTERACTORS):
             # Search for UniProt ID in IntAct 'plants' file
             df = self._grep(interactor.uniprot_id)
             # Append to DataFrame if not empty
@@ -138,7 +138,7 @@ class IntAct:
         mads_vs_all = pd.read_csv(filepath, sep = '\t')
 
         # MADS UniProt IDs
-        mads = set([interactor.uniprot_id for interactor in utils.iterate_folder(path.INTERACTORS)])
+        mads = set([interactor.uniprot_id for interactor in Interactor.iterate_folder(path.INTERACTORS)])
 
         # Filter MADS vs MADS interactions
         is_there_mikc = lambda x: x.split('-')[0].split(':')[1] in mads

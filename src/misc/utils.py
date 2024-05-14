@@ -1,13 +1,8 @@
 # Built-in modules
-import os
-from typing import Any, Generator
+from typing import Any
 
 # Third-party modules
 import pickle
-from tqdm import tqdm 
-
-# Custom modules
-from src.entities.interactor import Interactor
 
 def pickling(data: Any, path: str) -> None:
     '''
@@ -63,15 +58,3 @@ def read_fasta_str(fasta: str) -> tuple[str, str]:
     sequence = sequence.replace('\n', '')
 
     return header, sequence
-
-def iterate_folder(folder: str, start:int = 0, limit: int = -1) -> Generator[Any, None, None]:
-    for i, file in enumerate(tqdm(sorted(os.listdir(folder)))):
-        if i == limit:
-            break
-        if i < start:
-            continue
-        extension = file.split('.')[-1]
-        if extension == 'pkl':
-            yield unpickling(f'{folder}/{file}')
-        elif extension == 'int':
-            yield Interactor.unpickle(file)

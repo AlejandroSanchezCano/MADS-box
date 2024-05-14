@@ -10,7 +10,6 @@ from multitax import NcbiTx
 
 # Custom modules
 from src.misc import path
-from src.misc import utils
 from src.misc.logger import logger
 from src.entities.interactor import Interactor
 
@@ -112,7 +111,7 @@ class BioGRID:
         mads_vs_all = pd.DataFrame()
 
         # Iterate over MADS interactors
-        for interactor in utils.iterate_folder(path.INTERACTORS):
+        for interactor in Interactor.iterate_folder(path.INTERACTORS):
             # Search for UniProt ID in BioGRID 'plants' file
             df = self._grep(interactor.uniprot_id)
             # Append to DataFrame if not empty
@@ -137,7 +136,7 @@ class BioGRID:
         mads_vs_all = pd.read_csv(filepath, sep = '\t')
 
         # MADS UniProt IDs
-        mads = set([interactor.uniprot_id for interactor in utils.iterate_folder(path.INTERACTORS)])
+        mads = set([interactor.uniprot_id for interactor in Interactor.iterate_folder(path.INTERACTORS)])
 
         # Concatenate UniProt IDs column A
         uniprot_columns_A = ['SWISS-PROT Accessions Interactor A', 'TREMBL Accessions Interactor A']

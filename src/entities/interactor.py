@@ -1,8 +1,10 @@
 # Built-in modules
 from __future__ import annotations
-from typing import Any
+import os
+from typing import Any, Generator
 
 # Third-party modules
+from tqdm import tqdm
 from multitax import NcbiTx
 
 # Custom modules
@@ -125,6 +127,16 @@ class Interactor:
         filepath = f'{path.INTERACTORS}/{uniprot_id}'
         interactor__dict__ = utils.unpickling(path = filepath)
         return Interactor(**interactor__dict__)
+    
+    @staticmethod
+    def iterate_folder(folder: str, start:int = 0, limit: int = -1) -> Generator[Any, None, None]:
+        for i, file in enumerate(tqdm(sorted(os.listdir(folder)))):
+            if i == limit:
+                break
+            if i < start:
+                continue
+            
+            yield Interactor.unpickle(file)
 
 if __name__ == '__main__':
     '''Test class'''

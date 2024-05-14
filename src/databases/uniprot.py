@@ -22,7 +22,7 @@ class UniProt:
         InterPro from the UniProt database and add them to the 
         Interactor objects.
         '''
-        for interactor in utils.iterate_folder(path.INTERACTORS):
+        for interactor in Interactor.iterate_folder(path.INTERACTORS):
             # Download FASTA from UniProt database
             cmd = f'curl "https://rest.uniprot.org/uniprotkb/{interactor.uniprot_id}.fasta"'
             response = subprocess.run(cmd, capture_output = True, text = True, shell = True).stdout
@@ -76,7 +76,7 @@ class UniProt:
         InterPro from the UniProt database and add them to the 
         Interactor objects.
         '''
-        for interactor in utils.iterate_folder(path.INTERACTORS):
+        for interactor in Interactor.iterate_folder(path.INTERACTORS):
             # Download metadata from UniProt database
             self.__parse_uniprot_entry(interactor)
 
@@ -92,7 +92,7 @@ class UniProt:
         Download AlphaFold structures (14106) of all the MIKC proteins 
         found with InterPro (17090) from the AlphaFold database.
         '''
-        for interactor in utils.iterate_folder(path.INTERACTORS):
+        for interactor in Interactor.iterate_folder(path.INTERACTORS):
             # Download response from AlphaFold database
             structure_path = f'{path.UNIPROT_STRUCTURES}/{interactor.uniprot_id}.pdb'
             cmd = f'curl "https://alphafold.ebi.ac.uk/files/AF-{interactor.uniprot_id}-F1-model_v4.pdb"'
