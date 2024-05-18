@@ -26,12 +26,6 @@ class Interactor:
             'K-box':    []
         })
 
-        # Modified with 'Database' class and its children
-        self.biogrid_id = kwargs.get('biogrid_id', '')
-        self.string_id = kwargs.get('string_id', '')
-        self.intact_id = kwargs.get('intact_id', '')
-        self.plappisite_id = kwargs.get('plappisite_id', '')
-
         # Modified with 'parse_uniprot()' method
         self.uniprot_info = kwargs.get('uniprot_info', {
             'Section' : '',

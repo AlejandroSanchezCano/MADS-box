@@ -1,5 +1,5 @@
 # Built-in modules
-from typing import Any
+from typing import Any, Tuple
 
 # Third-party modules
 import pickle
@@ -39,7 +39,7 @@ def unpickling(path: str) -> Any:
     with open(path, 'rb') as handle:
         return pickle.load(file = handle)
 
-def read_fasta_str(fasta: str) -> tuple[str, str]:
+def read_fasta_str(fasta: str) -> Tuple[str, str]:
     '''
     Parses a FASTA string into its header and sequence.
 

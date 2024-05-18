@@ -8,9 +8,11 @@ PLOTS = f'{ROOT}/plots'
 
 # High-order directories in DATA
 INTERACTORS = f'{DATA}/Interactors'
-UNIPROT_STRUCTURES = f'{DATA}/Structures/UniProt'
+UNIPROT_PDB = f'{DATA}/PDBs/UniProt'
 NETWORKS = f'{DATA}/Networks'
 LITERATUREMINING = f'{DATA}/LiteratureMining'
+S4PRED = f'{DATA}/S4PRED'
+STRUCTURES = f'{DATA}/Structures'
 
 # Databases
 DATABASES = f'{DATA}/Databases'

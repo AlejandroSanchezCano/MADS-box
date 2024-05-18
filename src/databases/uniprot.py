@@ -104,7 +104,7 @@ class UniProt:
                     handle.write(response)
 
         # Logging
-        n_pdb_files = len(os.listdir(path.UNIPROT_STRUCTURES))
+        n_pdb_files = len(os.listdir(path.UNIPROT_PDB))
         n_interactors = len(os.listdir(path.INTERACTORS))
         logger.info(f'{n_pdb_files} AlphaFold files have been downloaded out of {n_interactors} MIKC proteins')
 
