@@ -70,22 +70,25 @@ class PlaPPISite:
         best source of predicted PPIs, so PlaPPISite predicted PPIs will 
         not be likely used.
         '''
-        # Initialize DataFrame
-        mads_vs_all = pd.DataFrame()
-
         # Retrieve PPI table of all MADS proteins   
         for interactor in Interactor.iterate_folder(path.INTERACTORS):
             soup = self._soupify(interactor.uniprot_id)
             table = self._get_table(soup)
             non_predicted_table = table[table['PPI source'].apply(lambda x: x not in ['Predicted', 'prediction'])]
             
-            # # Append to DataFrame if not empty (non-predicted PPIs)
+            # Append to DataFrame if not empty (non-predicted PPIs)
             if not non_predicted_table.empty:
+                
+                # Load DataFrame or create it if there is none in cache
+                try:
+                    cache_path = f'{path.NETWORKS}/PlaPPISite_MADS_vs_ALL.tsv'
+                    mads_vs_all = pd.read_csv(cache_path, sep = '\t')
+                except FileNotFoundError:
+                    mads_vs_all = pd.DataFrame() 
+                
+                # Append to DataFrame
                 mads_vs_all = pd.concat([mads_vs_all, non_predicted_table], ignore_index = True)
-
-        # Save DataFrame
-        filepath = f'{path.NETWORKS}/PlaPPISIte_MADS_vs_ALL.tsv'
-        mads_vs_all.to_csv(filepath, sep = '\t', index = False)
+                mads_vs_all.to_csv(cache_path, sep = '\t', index = False)
 
         # Logging
         logger.info(f'MADS vs. all PPIs in PlaPPISite -> dim({mads_vs_all.shape})')

@@ -14,7 +14,7 @@ from src.misc import utils
 class Interactor:
 
     # Initialize NCBI taxonomy tree
-    #ncbi_tx = NcbiTx()
+    ncbi_tx = NcbiTx()
 
     def __init__(self, **kwargs: dict[str, Any]):
         # Modified with 'InterPro' class
