@@ -11,8 +11,19 @@ class DeepCoil:
 
     def __init__(self):
         # It doesn't find GPU but it is actually faster with GPU
-        self.model = deepcoil.DeepCoil(use_gpu = False) 
+        self.model = self.load()
         self.prediction = None
+
+    def load(self) -> None:
+        '''
+        Loads the DeepCoil model.
+        '''
+        # Load model
+        model = deepcoil.DeepCoil(use_gpu = False) 
+        # Logging
+        logger.info('DeepCoil model is loaded')
+
+        return model
 
     def predict(self, id: str, seq: str) -> 'dict[str, np.ndarray]':
         '''
@@ -36,7 +47,7 @@ class DeepCoil:
         self.prediction = self.model.predict(fasta_dict)[id]
 
         # Logger
-        logger.info(f'Coiled-coil prediction for {id} is done')
+        logger.info(f'Coiled-coil prediction for {id}')
 
         return self.prediction
 

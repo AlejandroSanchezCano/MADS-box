@@ -17,10 +17,6 @@ class InterPro:
 
     # Static attributes
     url = "https://www.ebi.ac.uk/interpro/api"
-    interpro2domain = {
-        'IPR036879' : 'MADS-box',
-        'IPR002487' : 'K-box'
-    }
 
     def __init__(self, accession: str):
         # Modified upon instantiation
@@ -105,7 +101,7 @@ class InterPro:
         logger.info(f'{self.name=}')
         logger.info(f'{self.number_of=}')
 
-    def __get_domains(self, json_result: dict[str, Any]) -> list[tuple[int, int]]: # Interesting -> A0A061FZ27 has two K-box domains!!
+    def __get_domains(self, json_result: dict[str, Any]) -> list[tuple[int, int]]: 
         '''
         Inspect the JSON info of the InterPro protein to retrieve the 
         domain bounds. 
@@ -131,7 +127,7 @@ class InterPro:
         # Find start and end of domains
         for entry_protein_location in json_result['entries'][0]['entry_protein_locations']:
             start = entry_protein_location['fragments'][0]['start'] - 1  # InterPro is 1-based
-            end = entry_protein_location['fragments'][0]['end'] - 1
+            end = entry_protein_location['fragments'][0]['end']
             domains += [(start, end)]
 
         return domains
@@ -184,8 +180,9 @@ class InterPro:
         Manages intersection behaviour between the Interactor of two 
         InterPro instances. It is used to find the MIKC proteins from 
         the MADS-containing proteins and the K-box-containing proteins.
-        If slow, try:
-        "awk 'NR==FNR{arr[$0];next} $0 in arr' %s.txt %s.txt | wc -l"
+        During this process, the domains of the common interactors are
+        merged into a single Interactor object, that's why a simple
+        set and & behaviour is not possible here
 
         Returns
         -------
@@ -193,8 +190,31 @@ class InterPro:
             List of Interactor objects corresponding to the common ones 
             shared by two InterPro instances.
         '''
-        return list(set(self.interactors) & set(other.interactors))
+        # Create dictionaries for faster lookup
+        mads_dict = {interactor.uniprot_id: interactor for interactor in self.interactors}
+        kbox_dict = {interactor.uniprot_id: interactor for interactor in other.interactors}
 
+        # Find common interactors
+        common_uniprot_ids = set(mads_dict.keys()) & set(kbox_dict.keys())
+
+        # Create Interactor objects for common interactors
+        # and merge their domains
+        common_interactors = []
+        for uniprot_id in common_uniprot_ids:
+            mads_interactor = mads_dict[uniprot_id]
+            kbox_interactor = kbox_dict[uniprot_id]
+            common_interactor = Interactor(
+                uniprot_id = uniprot_id,
+                taxon_id = mads_interactor.taxon_id,
+                domains = {
+                    'MADS-box': mads_interactor.domains,
+                    'K-box': kbox_interactor.domains
+                }
+            )
+            common_interactors.append(common_interactor)
+        
+        return common_interactors
+            
     @staticmethod
     def save(interactors: list[Interactor]) -> None:
         '''
@@ -214,15 +234,15 @@ class InterPro:
 if __name__ == '__main__':
     '''Test class'''
     # MADS proteins
+    mads = InterPro('IPR002100')
+    mads.get_metadata()
+    mads.get_uniprot()
+
+    # K-box proteins
     kbox = InterPro('IPR002487')
     kbox.get_metadata()
     kbox.get_uniprot()
 
-    # K-box proteins
-    mads = InterPro('IPR036879')
-    mads.get_metadata()
-    mads.get_uniprot()
-    
     # MIKC proteins
-    mikc = kbox & mads
+    mikc = mads & kbox
     InterPro.save(interactors = mikc)

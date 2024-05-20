@@ -5,7 +5,7 @@ from typing import Any, Generator
 
 # Third-party modules
 from tqdm import tqdm
-from multitax import NcbiTx
+# from multitax import NcbiTx
 
 # Custom modules
 from src.misc import path
@@ -14,7 +14,7 @@ from src.misc import utils
 class Interactor:
 
     # Initialize NCBI taxonomy tree
-    ncbi_tx = NcbiTx()
+    # ncbi_tx = NcbiTx()
 
     def __init__(self, **kwargs: dict[str, Any]):
         # Modified with 'InterPro' class
@@ -43,40 +43,6 @@ class Interactor:
             Instance attribute mapping.
         '''
         return str(self.__dict__)
-
-    def __eq__(self, other: Interactor) -> bool:
-        '''
-        Overrides the equal (==) operator by considering that two 
-        Interactor objects are equal if they have the same UniProt ID. 
-        Also, this is necessary along with the __hash__ dunder method 
-        for the functionality of sets.
-
-        Parameters
-        ----------
-        other : Interactor
-            Other Interactor object.
-
-        Returns
-        -------
-        bool
-            Whether the same UniProt ID is shared by the Interactor 
-            objects.
-        '''
-        return self.uniprot_id == other.uniprot_id
-    
-    def __hash__(self) -> int:
-        '''
-        Overrides the hash function by hashing the UniProt ID string. 
-        Also, this is necessary along with the __eq__ dunder method for
-        the functionality 
-        of sets.
-
-        Returns
-        -------
-        int
-            Hash.
-        '''
-        return hash(self.uniprot_id)
     
     def taxon_id_to_name(self) -> str:
         '''
@@ -135,6 +101,6 @@ class Interactor:
 if __name__ == '__main__':
     '''Test class'''
     
-    i = Interactor.unpickle('A0A0A0KC22')
-    print('File not found')
+    i = Interactor.unpickle('P48007')
+    print(i)
 

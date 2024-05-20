@@ -13,6 +13,9 @@ NETWORKS = f'{DATA}/Networks'
 LITERATUREMINING = f'{DATA}/LiteratureMining'
 S4PRED = f'{DATA}/S4PRED'
 STRUCTURES = f'{DATA}/Structures'
+UNIPROT_STRUCTURES = f'{DATA}/Structures/UniProt'
+ARABIDOPSIS = f'{DATA}/Arabidopsis'
+ALPHAFOLD_AG = f'{DATA}/AlphaFold/AGAMOUS'
 
 # Databases
 DATABASES = f'{DATA}/Databases'
