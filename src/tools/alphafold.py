@@ -11,12 +11,13 @@ from src.misc.logger import logger
 
 class AlphaFold:
 
+    def __init__(self, id: str, seq: str, output_dir: str):
+        self.id = id
+        self.seq = seq
+        self.output_dir = output_dir
+
     def predict(
             self, 
-            # Required
-            id: str, 
-            seq: str, 
-            output_dir: str,
             # Relaxation
             amber: bool = True,
             num_relax: int = 1,
@@ -75,17 +76,17 @@ class AlphaFold:
                         'max_PAE': float, 'PAE': np.ndarray}}
         '''
         # Make output directory
-        os.makedirs(output_dir, exist_ok = True)
+        os.makedirs(self.output_dir, exist_ok = True)
 
         # FASTA file
-        with open(f'{output_dir}/{id}.fa', 'w') as f:
-            f.write(f'>{id}\n{seq}')
+        with open(f'{self.output_dir}/{id}.fa', 'w') as f:
+            f.write(f'>{id}\n{self.seq}')
 
         # Run AlphaFold
         cmd = [
             'colabfold_batch',
-            f'{output_dir}/{id}.fa',
-            f'{output_dir}',
+            f'{self.output_dir}/{id}.fa',
+            f'{self.output_dir}',
             # '--amber' if amber else '',
             # f'--num-relax {num_relax}',
             f'--num-recycle {num_recycle}',
@@ -95,27 +96,30 @@ class AlphaFold:
         ]
         subprocess.run(' '.join(cmd), shell = True)
 
+        # Logger
+        logger.info(f'AlphaFold prediction for {id}')
+
+    def metrics(self) -> dict[str, dict[str, float|np.ndarray]]:
         # Process metric output
-        scores = sorted([json for json in os.listdir(output_dir) if json.endswith('.json') and json.startswith(id + '_scores')])
-        metrics = {'rank1':{} for _ in scores}
+        scores = sorted([json for json in os.listdir(self.output_dir) if json.endswith('.json') and json.startswith(self.id + '_scores')])
+        metrics = {f'rank_{n + 1}':{} for n in range(len(scores))}
         # Iterate over score file names
         for score, metric in zip(scores, metrics):
-            with open(f'{output_dir}/{score}', 'r') as f:
+            with open(f'{self.output_dir}/{score}', 'r') as f:
                 # Open json file
                 data = json.load(f)
                 # Extract metrics
                 metrics[metric]['pLDDT'] = data['plddt']
                 metrics[metric]['pLDDT_mean'] = np.mean(data['plddt'])
-                metrics[metric]['pLDDT_A'] = np.mean(data['plddt'][:len(seq.split(':')[0])])
-                metrics[metric]['pLDDT_B'] = np.mean(data['plddt'][len(seq.split(':')[0]):])
+                metrics[metric]['pLDDT_A'] = data['plddt'][:len(self.seq.split(':')[0])]
+                metrics[metric]['pLDDT_B'] = data['plddt'][len(self.seq.split(':')[0]):]
+                metrics[metric]['pLDDT_A_mean'] = np.mean(data['plddt'][:len(self.seq.split(':')[0])])
+                metrics[metric]['pLDDT_B_mean'] = np.mean(data['plddt'][len(self.seq.split(':')[0]):])
                 metrics[metric]['pTM'] = data['ptm']
                 metrics[metric]['ipTM'] = data['iptm']
                 metrics[metric]['max_PAE'] = data['max_pae']
-                metrics[metric]['PAE'] = data['pae']
-
-        # Logger
-        logger.info(f'AlphaFold prediction for {id}')
-
+                #metrics[metric]['PAE'] = data['pae']
+        
         return metrics
 
 if __name__ == '__main__':
