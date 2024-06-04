@@ -144,7 +144,7 @@ class Structure:
         '''
         filepath = f'{path.STRUCTURES}/{self.uniprot_id}.str'
         utils.pickling(data = self.__dict__, path = filepath)
-
+        
 if __name__ == '__main__':
     structure = Structure(uniprot_id = 'A0A0A0KC22')
 

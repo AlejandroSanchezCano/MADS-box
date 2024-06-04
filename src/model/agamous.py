@@ -115,36 +115,55 @@ class AGAMOUS:
 
         return pd.DataFrame.from_dict(d, orient='index')
 
+    def esm2_whole(self):
+        data = list(zip(self.name, self.uniprot_id))
+        l = []
+        for i in range(len(data)):
+            for j in range(i, len(data)):
+                print(i, j)
+                id1, uniprot_id1 = data[i]
+                id2, uniprot_id2 = data[j]
+                interactor1 = Interactor.unpickle(uniprot_id1)
+                interactor2 = Interactor.unpickle(uniprot_id2)
+                kbox1 = interactor1.domains['K-box'][-1]
+                mads1 = interactor1.domains['MADS-box'][0]
+                mik_seq1 = interactor1.seq[mads1[0] : kbox1[1]]
+                kbox2 = interactor2.domains['K-box'][-1]
+                mads2 = interactor2.domains['MADS-box'][0]
+                mik_seq2 = interactor2.seq[mads2[0] : kbox2[1]]
+                l.append((f'{id1}_{id2}', mik_seq1 + 'G'*25 + mik_seq2))
+
+        # ESM2
+        esm2 = ESM2()
+        d = {}
+        for id, seq in l:
+            print(id)
+            
+            esm2.prepare_data([(id, seq)])
+            esm2.run_model()
+            r, s = esm2.extract_representations()
+            d[id] = s[id]
+
+        df = pd.DataFrame.from_dict(d, orient='index')
+        print(df)
+        df.to_csv('./esm2_whole.csv')
+
+    def interactions(self):
+        from src.databases.network import Network
+        df = Network(db = 'IntAct', version = '2024-02-14', type = 'MADS_vs_MADS').df
+        data = list(zip(self.name, self.uniprot_id))
+        l = {}
+        for i in range(len(data)):
+            for j in range(i, len(data)):
+                id1, uniprot_id1 = data[i]
+                id2, uniprot_id2 = data[j]
+                id = '-'.join(sorted([uniprot_id1, uniprot_id2]))
+                l[f'{id1}_{id2}'] = int(id in df['A-B'].values)
+
+        df = pd.DataFrame.from_dict(l, orient='index')
+        df.columns = ['Interaction']
+        print(df)
+        df.to_csv('./interactions.csv')
 if __name__ == '__main__':
     agamous = AGAMOUS()
-
-    '''
-    df = agamous.esm2()
-    from sklearn.preprocessing import StandardScaler
-    scaler = StandardScaler()
-    df = pd.DataFrame(scaler.fit_transform(df), columns = df.columns)
-    #from src.machine_learning.dimensionality_reduction import DimensionalityReduction
-    #dr = DimensionalityReduction(df, draw = agamous.interaction)
-    #dr.pca()
-    from lazypredict import LazyClassifier
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.model_selection import train_test_split
-    from sklearn.metrics import balanced_accuracy_score
-    X_train, X_test, y_train, y_test = train_test_split(df.sample(frac=1), agamous.interaction.sample(frac=1), test_size = 0.3)
-    clf = LazyClassifier(verbose=0,ignore_warnings=True, custom_metric=None)
-    models,predictions = clf.fit(X_train, X_test, y_train, y_test)
-    print(models)
-    '''
-
-
-
-
-    
-    df = agamous.alphafold()
-    from src.machine_learning.dimensionality_reduction import DimensionalityReduction
-    dr = DimensionalityReduction(df, draw = agamous.interaction, text = [name[-2:] for name in agamous.name])
-    dr.pca()
-    #X_train, X_test, y_train, y_test = train_test_split(df.sample(frac=1), agamous.interaction.sample(frac=1), test_size = 0.3)
-    #clf = LazyClassifier(verbose=0,ignore_warnings=True, custom_metric=None)
-    #models,predictions = clf.fit(X_train, X_test, y_train, y_test)
-    #print(models)
+    agamous.interactions()

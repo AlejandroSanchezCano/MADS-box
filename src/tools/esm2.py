@@ -29,7 +29,7 @@ class ESM2:
         self.model, self.alphabet = self.load()
         self.batch = None
         self.output = None
-
+    
     def load(self) -> tuple[esm.model.esm2.ESM2, esm.data.Alphabet]:
         '''
         Load ESM2 model and alphabet.
@@ -154,3 +154,4 @@ if __name__ == '__main__':
     r, s = esm2.extract_representations()
     esm2.contact_maps('.')
     print([len(i) for i in list(s.values())])
+
