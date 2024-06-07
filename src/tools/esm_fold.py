@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from scipy.special import softmax
 
 # Custom libraries
+from src.misc import utils
 from src.misc.logger import logger
 
 # TODO: substitute A, B, C ticks in PAE with protein names
@@ -90,7 +91,7 @@ class ESMFold():
             t1 = time.time() 
             result = function(*args, **kwargs) 
             t2 = time.time() 
-            logger.info(f'Sequences folded in {(t2-t1):.4f}s') 
+            logger.info(f'Sequence folded in {(t2-t1):.4f}s') 
             return result 
         return wrapper 
     
@@ -155,14 +156,55 @@ class ESMFold():
         self.output = output
         return output
 
-    def plot_plddt(self) -> None:
-        '''Plots pLDDT values.'''
+    def fold_fasta(self, path: str, save: str) -> None:
+        '''
+        Folds a FASTA file and saves the output.
+
+        Parameters
+        ----------
+        path : str
+            FASTA file path
+        save : str
+            Saving path
+        '''
+        # Fold
+        for header, seq in utils.read_fasta_str(path):
+            self.fold([seq])
+            self.save_pdb(id = header, save = save)
+            break
+
+    @property
+    def pdb(self) -> str:
+        return self.model.output_to_pdb(self.output)[0]
+    
+    @property
+    def plddt(self) -> np.ndarray:
+        '''Returns pLDDT values'''
         # Mask linker
         plddt = self.output["plddt"].cpu().numpy()[0,:,1]
         mask = self.output["atom37_atom_exists"].cpu().numpy()[0,:,1] == 1
+        return plddt[mask] * 100
+    
+    @property
+    def pae(self) -> np.ndarray:
+        # Mask linker
+        pae_all = (self.output["aligned_confidence_probs"][0].cpu().numpy() * np.arange(64)).mean(-1) * 31
+        mask = self.output["atom37_atom_exists"].cpu().numpy()[0,:,1] == 1
+        return pae_all[mask,:][:,mask]
+    
+    @property
+    def contacts(self) -> np.ndarray:
+        # Mask linker
+        bins = np.append(0,np.linspace(2.3125,21.6875,63))
+        sm_contacts = softmax(self.output["distogram_logits"].cpu().numpy(),-1)[0]
+        sm_contacts = sm_contacts[...,bins<8].sum(-1)
+        mask = self.output["atom37_atom_exists"].cpu().numpy()[0,:,1] == 1
+        return sm_contacts[mask,:][:,mask]
 
+    def plot_plddt(self) -> None:
+        '''Plots pLDDT values.'''
         # Scatterplot and rugplot
-        y = plddt[mask] * 100
+        y = self.plddt
         x = list(range(len(y)))
         hue = ['Very high' if i >= 90 else 'Condifent' if i >= 70 else 'Low' if i >= 50 else 'Very low' for i in y]
         plddt_palette = {'Very high': '#0053D6', 'Condifent':'#65CBF3', 'Low':'#FFDB13', 'Very low':'#FF7D45'}
@@ -217,15 +259,10 @@ class ESMFold():
 
     def plot_pae(self) -> None:
         '''Plots predicted aligned error (PAE)'''
-        # Mask linker
-        pae_all = (self.output["aligned_confidence_probs"][0].cpu().numpy() * np.arange(64)).mean(-1) * 31
-        mask = self.output["atom37_atom_exists"].cpu().numpy()[0,:,1] == 1
-        pae_masked = pae_all[mask,:][:,mask]
-        
         # Plot
         plt.figure()
         plt.title('Predicted Aligned Error')
-        plt.imshow(pae_masked,cmap="bwr",vmin=0,vmax=30,extent=(0, pae_masked.shape[0], pae_masked.shape[0], 0))
+        plt.imshow(self.pae ,cmap="bwr",vmin=0,vmax=30,extent=(0, self.pae.shape[0], self.pae.shape[0], 0))
         self.plot_extra()
         cb = plt.colorbar()
         plt.xlabel('Scored residue')
@@ -235,12 +272,8 @@ class ESMFold():
 
     def plot_contact_map(self) -> None:
         '''Plots map of contacts between residues'''
-        # Mask linker
-        bins = np.append(0,np.linspace(2.3125,21.6875,63))
-        sm_contacts = softmax(self.output["distogram_logits"].cpu().numpy(),-1)[0]
-        sm_contacts = sm_contacts[...,bins<8].sum(-1)
-        mask = self.output["atom37_atom_exists"].cpu().numpy()[0,:,1] == 1
-        sm_contacts_masked = sm_contacts[mask,:][:,mask]
+        # Get contacts and n_residues
+        sm_contacts_masked = self.contacts
         n_residues = sm_contacts_masked.shape[0]
 
         # Plot
@@ -252,20 +285,24 @@ class ESMFold():
         self.plot_extra()
         plt.savefig(f'contact_map_pi_svp.png', bbox_inches='tight')
 
-    def save_pdb(self, id: str) -> None: 
-        pdb = self.model.output_to_pdb(self.output)[0]   
-        with open(f"pdb_pi_sep3.pdb","w") as handle:
-            handle.write(pdb)
+    def save_pdb(self, id: str, save: str) -> None: 
+        with open(f"{save}/{id}.pdb", "w") as handle:
+            handle.write(self.pdb)
+        
 
 if __name__ == '__main__':
     sep3 = 'MGRGRVELKRIENKINRQVTFAKRRNGLLKKAYELSVLCDAEVALIIFSNRGKLYEFCSSSSMLRTLERYQKCNYGAPEPNVPSREALAVELSSQQEYLKLKERYDALQRTQRNLLGEDLGPLSTKELESLERQLDSSLKQIRALRTQFMLDQLNDLQSKERMLTETNKTLRLRLADGYQMPLQLNPNQEEVDHYGRHHHQQQQHSQAFFQPLECEPILQIGYQGQQDGMGAGPSVNNYMLGWLPYDTNSI'
     pi = 'MGRGKIEIKRIENANNRVVTFSKRRNGLVKKAKEITVLCDAKVALIIFASNGKMIDYCCPSMDLGAMLDQYQKLSGKKLWDAKHENLSNEIDRIKKENDSLQLELRHLKGEDIQSLNLKNLMAVEHAIEHGLDKVRDHQMEILISKRRNEKMMAEEQRQLTFQLQQQEMAIASNARGMMMRDHDGQFGYRVQPIQPNLQEKIMSLVID'
     svp = 'MAREKIQIRKIDNATARQVTFSKRRRGLFKKAEELSVLCDADVALIIFSSTGKLFEFCSSSMKEVLERHNLQSKNLEKLDQPSLELQLVENSDHARMSKEIADKSHRLRQMRGEELQGLDIEELQQLEKALETGLTRVIETKSDKIMSEISELQKKGMQLMDENKRLRQQGTQLTEENERLGMQICNNVHAHGGAESENAAVYEEGQSSESITNAGNSTGAPVDSESSDTSLRLGLPYGG'
     
+    #esm = ESMFold()
+    #esm.performance_optimizations()
+    #output = esm.fold([sep3])
+    #esm.plot_plddt()
+    #esm.plot_pae()
+    #esm.plot_contact_map()
+    ##esm.save_pdb('sadasd')
+
     esm = ESMFold()
     esm.performance_optimizations()
-    output = esm.fold([sep3])
-    esm.plot_plddt()
-    esm.plot_pae()
-    esm.plot_contact_map()
-    #esm.save_pdb('sadasd')
+    esm.fold_fasta('/home/asanchez/MADS-box/data/Arabidopsis/Arabidopsis.fasta', '/home/asanchez/MADS-box/data/Arabidopsis/ESMFold')

@@ -1,5 +1,5 @@
 # Built-in modules
-from typing import Any, Tuple
+from typing import Any, Generator, Tuple
 
 # Third-party modules
 import pickle
@@ -39,22 +39,23 @@ def unpickling(path: str) -> Any:
     with open(path, 'rb') as handle:
         return pickle.load(file = handle)
 
-def read_fasta_str(fasta: str) -> Tuple[str, str]:
+def read_fasta_str(file: str) -> Generator[Tuple[str, str], None, None]:
     '''
-    Parses a FASTA string into its header and sequence.
+    Parses a FASTA file into its headers and sequences.
 
     Parameters
     ----------
-    fasta : str
-        FASTA string.
+    file : str
+        FASTA file.
 
     Returns
     -------
-    tuple[str, str]
-        Tuple containing the header and the sequence.
+    Generator[Tuple[str, str], None, None]
+        Headers and the sequences.
     '''
-    header, sequence = fasta.split('\n', 1)
-    header = header.replace('>', '')
-    sequence = sequence.replace('\n', '')
-
-    return header, sequence
+    with open(file, 'r') as handle:
+        for line in handle:
+            if line.startswith('>'):
+                header = line[1:].strip()
+                sequence = handle.readline().strip()
+                yield header, sequence

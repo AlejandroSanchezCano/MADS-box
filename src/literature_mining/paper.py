@@ -138,13 +138,13 @@ class Paper:
         # Column names to UniProt IDs + mutation
         for column in df.columns:
             species, gene, mutation = self.parse_gene_name(column)
-            muation = '_' + mutation if mutation else ''
+            mutation = '_' + mutation if mutation else ''
             df = df.rename(columns = {column : f'{self.name2uniprot[species + gene]}{mutation}'})
-        
+
         # Index names to UniProt IDs + mutation
         for index in df.index:
             species, gene, mutation = self.parse_gene_name(index)
-            muation = '_' + mutation if mutation else ''
+            mutation = '_' + mutation if mutation else ''
             df = df.rename(index = {index : f'{self.name2uniprot[species + gene]}{mutation}'})
         
         # Remove NONE columns and indexes
@@ -211,7 +211,6 @@ class Paper:
         return db.drop_duplicates('A-B')
     
 if __name__ == '__main__':
-    db = Paper.analyse_papers()
-    print(db[db.Interaction > 0])
-    print(db[db['A'].str.contains('_')])
-    print(db[db['B'].str.contains('_')])
+    p = Paper('VanDijk', '2010')
+    for df in p.dfs:
+        print(p.matrix_or_list(df))
