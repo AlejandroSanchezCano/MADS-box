@@ -16,6 +16,8 @@ STRUCTURES = f'{DATA}/Structures'
 UNIPROT_STRUCTURES = f'{DATA}/Structures/UniProt'
 ARABIDOPSIS = f'{DATA}/Arabidopsis'
 ALPHAFOLD_AG = f'{DATA}/AlphaFold/AGAMOUS'
+PROTEIN = f'{DATA}/Protein'
+PROTEINPROTEIN = f'{DATA}/ProteinProtein'
 
 # Databases
 DATABASES = f'{DATA}/Databases'

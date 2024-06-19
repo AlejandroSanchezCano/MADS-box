@@ -114,6 +114,7 @@ class Paper:
         df['A'] = df['A'].apply(to_uniprot)
         df['B'] = df['B'].apply(to_uniprot)
         df['A-B'] = df.apply(lambda x: '-'.join(sorted([x['A'], x['B']])), axis = 1)
+        df['From'] = self.__repr__()
         df = df[~df['A'].str.contains('NONE')]
         df = df[~df['B'].str.contains('NONE')]
         return df.dropna()
@@ -152,13 +153,14 @@ class Paper:
         df = df.loc[~df.index.str.contains('NONE')]
 
         # Convert to list-like DataFrame
-        dff = {'A':[], 'B':[], 'Interaction':[], 'A-B':[]}
+        dff = {'A':[], 'B':[], 'Interaction':[], 'A-B':[], 'From':[]}
         for i in df.columns:
             for j in df.index:
                 dff['A'].append(i)
                 dff['B'].append(j)
                 dff['Interaction'].append(df.loc[j][i])
                 dff['A-B'].append('-'.join(sorted([i, j])))
+                dff['From'].append(self.__repr__())
 
         dff = pd.DataFrame(dff).sort_values('A-B')
 
@@ -211,6 +213,7 @@ class Paper:
         return db.drop_duplicates('A-B')
     
 if __name__ == '__main__':
+    '''Test class'''
     p = Paper('VanDijk', '2010')
     for df in p.dfs:
         print(p.matrix_or_list(df))

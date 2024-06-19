@@ -16,8 +16,6 @@ from scipy.special import softmax
 from src.misc import utils
 from src.misc.logger import logger
 
-# TODO: substitute A, B, C ticks in PAE with protein names
-
 class ESMFold():
     # huggingface conda environment
     # pip install --upgrade transformers py3Dmol accelerate
@@ -301,8 +299,9 @@ if __name__ == '__main__':
     #esm.plot_plddt()
     #esm.plot_pae()
     #esm.plot_contact_map()
-    ##esm.save_pdb('sadasd')
+    #esm.save_pdb('sadasd')
 
-    esm = ESMFold()
-    esm.performance_optimizations()
-    esm.fold_fasta('/home/asanchez/MADS-box/data/Arabidopsis/Arabidopsis.fasta', '/home/asanchez/MADS-box/data/Arabidopsis/ESMFold')
+
+
+
+

@@ -1,4 +1,5 @@
 # Built-in modules
+import re
 import requests
 
 # Third-party modules
@@ -98,7 +99,7 @@ class PlaPPISite:
         Filters MADS vs. MADS interactions from the MADS vs. ALL
         '''
         # Load MADS_vs_ALL DataFrame
-        filepath = f'{path.NETWORKS}/PlaPPISIte_MADS_vs_ALL.tsv'
+        filepath = f'{path.NETWORKS}/PlaPPISite_MADS_vs_ALL.tsv'
         mads_vs_all = pd.read_csv(filepath, sep = '\t')
 
         # MADS UniProt IDs
@@ -112,10 +113,41 @@ class PlaPPISite:
         filepath = f'{path.NETWORKS}/PlaPPISite_MADS_vs_MADS.tsv'
         mads_vs_mads.to_csv(filepath, sep = '\t', index = False)
 
-        # Loggi
+        # Logging
+        logger.info(f'MADS vs. MADS PPIs in PlaPPISite -> dim({mads_vs_mads.shape})')
+
+    def standarize(self) -> None:
+        '''
+        Format data frame interaction network to accommodate standard naming
+        convention of columns to homogenize the data frames from different 
+        databases. It contains:
+        - A: UniProt ID of interactor A
+        - B: UniProt ID of interactor B
+        - A-B: Concatenation of A and B sorted alphabetically
+        - Species_A: Species ID of interactor A
+        - Species_B: Species ID of interactor B
+        '''
+        # Load MADS_vs_MADS DataFrame
+        filepath = f'{path.NETWORKS}/PlaPPISite_MADS_vs_MADS.tsv'
+        mads_vs_mads = pd.read_csv(filepath, sep = '\t')
+
+        # Assign columns
+        mads_vs_mads['A'] = mads_vs_mads['PPI'].apply(lambda x: x.split(' - ')[0])
+        mads_vs_mads['B'] = mads_vs_mads['PPI'].apply(lambda x: x.split(' - ')[1])
+        mads_vs_mads['A-B'] = mads_vs_mads[['A', 'B']].apply(lambda x: '-'.join(sorted(x)), axis = 1)
+        mads_vs_mads['Species_A'] = mads_vs_mads['A'].apply(lambda x: Interactor.unpickle(x).taxon_id)
+        mads_vs_mads['Species_B'] = mads_vs_mads['B'].apply(lambda x: Interactor.unpickle(x).taxon_id)
+
+        # Remove duplicated columns
+        mads_vs_mads = mads_vs_mads.drop_duplicates('A-B')
+
+        # Save DataFrame
+        filepath = f'{path.NETWORKS}/PlaPPISite_MADS_vs_MADS_standarized.tsv'
+        mads_vs_mads[['A', 'B', 'A-B', 'Species_A', 'Species_B']].to_csv(filepath, sep = '\t', index = False)
 
 if __name__ == '__main__':
     '''Test class'''
     plappisite = PlaPPISite()
-    plappisite.mads_vs_all()
+    # plappisite.mads_vs_all()
     # plappisite.mads_vs_mads()
+    plappisite.standarize()

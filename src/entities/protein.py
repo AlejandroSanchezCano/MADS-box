@@ -1,8 +1,9 @@
 # Built-in modules
 from __future__ import annotations
+from typing import Generator
 import re
 import os
-from typing import Generator
+
 
 # Third-party modules
 from tqdm import tqdm
@@ -10,9 +11,9 @@ from tqdm import tqdm
 # Custom modules
 from src.misc import path
 from src.misc import utils
-#from src.tools.esm_fold import ESMFold
+from src.tools.esm_fold import ESMFold
 from src.tools.foldseek import FoldSeek
-#from src.entities.interactor import Interactor
+from src.entities.interactor import Interactor
 from src.entities.contact_map import ContactMap
 
 class Protein:
@@ -21,7 +22,7 @@ class Protein:
         'AtAP1' : 'P35631'
     }
 
-    def __init__(self, name = str):
+    def __init__(self, name: str):
         # Instantiate from folder (from __dict__)
         try:
             __dict__ = utils.unpickling(f'{path.LITERATUREMINING}/Proteins/{name.split(".")[0]}.prot')
@@ -50,7 +51,7 @@ class Protein:
         return len(self.seq)
     
     def save(self) -> None:
-        utils.pickling(self.__dict__, f'{path.LITERATUREMINING}/Proteins/{self.name}.prot')
+        utils.pickling(self.__dict__, f'{path.PROTEIN}/{self.name}.prot')
 
                             ### MUTATION ###
                             
@@ -166,24 +167,25 @@ class Protein:
             protein.save()
 
 if __name__ == '__main__':
-    from collections import Counter
-    ms = Counter([p.most_similar for p in Protein.iterate()])
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    import pandas as pd
+    # from collections import Counter
+    # ms = Counter([p.most_similar for p in Protein.iterate()])
+    # import matplotlib.pyplot as plt
+    # import seaborn as sns
+    # import pandas as pd
+    # df = pd.DataFrame.from_dict(ms, orient='index', columns=['values'])
+    # # Reset index to make 'one', 'two', etc., regular columns
+    # df.reset_index(inplace=True)
+    # df = df.sort_values(by='values', ascending=False)
+    # # Step 2: Use Seaborn to create a boxplot
+    # plt.figure(figsize=(10, 10))  # Optional: Adjust figure size
+    # sns.barplot(y=df['index'], x=df['values'], orient = 'y')
+    # plt.title('Number of most similar Arabidopsis MKC using Foldseek')
+    # plt.xlabel('# of Occurrences')
+    # plt.ylabel('Arabidopsis MIKC')
+    # plt.tight_layout()
+    # plt.show()
+    # plt.savefig('.')
 
-
-    df = pd.DataFrame.from_dict(ms, orient='index', columns=['values'])
-
-    # Reset index to make 'one', 'two', etc., regular columns
-    df.reset_index(inplace=True)
-    df = df.sort_values(by='values', ascending=False)
-    # Step 2: Use Seaborn to create a boxplot
-    plt.figure(figsize=(10, 10))  # Optional: Adjust figure size
-    sns.barplot(y=df['index'], x=df['values'], orient = 'y')
-    plt.title('Number of most similar Arabidopsis MKC using Foldseek')
-    plt.xlabel('# of Occurrences')
-    plt.ylabel('Arabidopsis MIKC')
-    plt.tight_layout()
-    plt.show()
-    plt.savefig('.')
+    p = Protein('Q9SI38_N60_Y103H_A191V')
+    print(p.domains)
+    print(len(p))

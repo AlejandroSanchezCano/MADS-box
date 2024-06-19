@@ -111,6 +111,6 @@ class UniProt:
 if __name__ == '__main__':
     '''Test class'''
     uniprot = UniProt()
-    # uniprot.fill_sequences()
+    uniprot.fill_sequences()
     uniprot.fill_metadata()
-    # uniprot.download_structures()
+    uniprot.download_structures()
