@@ -11,9 +11,6 @@ class ContactMap():
     
     def __repr__(self) -> str:
         return self.matrix.__repr__()
-    
-    def resize(self, *size: int):
-        return resize(self.matrix, size)
 
     def pad(self, *size: int):
         # Calculate the amount of padding needed
@@ -41,13 +38,34 @@ class ContactMapPPI(ContactMap):
         super().__init__(matrix)
 
     def aa(self, p1: 'Protein', p2: 'Protein') -> np.array:
-        return self.matrix[:len(p1), :len(p1)]
+        return ContactMapPPI(self.matrix[:len(p1), :len(p1)])
     
     def bb(self, p1: 'Protein', p2: 'Protein') -> np.array:
-        return self.matrix[len(p1):, len(p1):]
+        return ContactMapPPI(self.matrix[len(p1):, len(p1):])
     
     def ab(self, p1: 'Protein', p2: 'Protein') -> np.array:
         return ContactMapPPI(self.matrix[:len(p1), len(p1):])
+
+    def i(self, p1: 'Protein', p2: 'Protein') -> np.array:
+        p1_i_start = p1.domains['MADS-box'][1] - 10
+        p1_i_end = p1.domains['K-box'][1]
+        p2_i_start = p2.domains['MADS-box'][1] - 10
+        p2_i_end = p2.domains['K-box'][1]
+        return ContactMapPPI(self.matrix[p1_i_start:p1_i_end, p2_i_start:p2_i_end])
+
+    def m(self, p1: 'Protein', p2: 'Protein') -> np.array:
+        p1_m_start = p1.domains['MADS-box'][0]
+        p1_m_end = p1.domains['MADS-box'][1]
+        p2_m_start = p2.domains['MADS-box'][0]
+        p2_m_end = p2.domains['MADS-box'][1]
+        return ContactMapPPI(self.matrix[p1_m_start:p1_m_end, p2_m_start:p2_m_end])
+
+    def k(self, p1: 'Protein', p2: 'Protein') -> np.array:
+        p1_k_start = p1.domains['K-box'][0]
+        p1_k_end = p1.domains['K-box'][1]
+        p2_k_start = p2.domains['K-box'][0]
+        p2_k_end = p2.domains['K-box'][1]
+        return ContactMapPPI(self.matrix[p1_k_start:p1_k_end, p2_k_start:p2_k_end])
 
     def plot(self, ppi: 'ProteinProtein'):
         # Horizontal and vertical lines

@@ -11,7 +11,7 @@ from torch.autograd import Variable
 import torchvision.transforms as transforms
 from sklearn.model_selection import train_test_split
 from src.entities.protein_protein import ProteinProtein
-from src.machine_learning.performance import Performance
+from src.zen.performance import Performance
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 logger.setLevel(logging.INFO)
@@ -38,17 +38,17 @@ logger.info(f'Images resized to shape {resized.shape}')
 #logger.info(f'Images padded to shape {padded.shape}')
 
 # Data augmentation
-#max_shape = max([map.matrix.shape[0] for map in maps])
-#transform = transforms.Compose([
-#    transforms.ToPILImage(),
-##    transforms.Resize((max_shape, max_shape)),
-##    #transforms.RandomHorizontalFlip(),
-#    transforms.RandomRotation(0)
-#])
-#
-#images = [transform(image) for image in resized]
-#images = torch.from_numpy(np.array(images)).float().to(device).unsqueeze(1)
-#logger.info(f'Images transformed to shape {images.shape}')
+max_shape = max([map.matrix.shape[0] for map in maps])
+transform = transforms.Compose([
+    transforms.ToPILImage(),
+    #transforms.Resize((max_shape, max_shape)),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomRotation(10)
+])
+
+images = [transform(image) for image in resized]
+images = torch.from_numpy(np.array(images)).float().to(device).unsqueeze(1)
+logger.info(f'Images transformed to shape {images.shape}')
 
 
 images = resized
@@ -147,7 +147,7 @@ def evaluate_model(model, criterion, loader):
     total_predicted = np.array([])
     # Batch iterator
     with torch.no_grad():
-        for images, labels in test:
+        for images, labels in loader:
             labels = labels.float().unsqueeze(1)
             outputs = model(images)
             predicted = (outputs > 0.5).float()
@@ -161,50 +161,55 @@ def evaluate_model(model, criterion, loader):
 # Main
 model = CNN().to(device)
 #model = SimplerCNN().to(device)
-criterion = nn.BCELoss()
-optimizer = optim.Adam(model.parameters(), lr = 0.001) 
-num_epochs = 10
+criterion = torch.nn.BCELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr = 0.001, weight_decay = 0.001)
+num_epochs = 200
 
 # Train + evaluate
-train_losses = []
-test_losses = []
-test_accuracies = []
-train_accuracies = []
+train_losses, test_losses, test_accuracies, train_accuracies = [], [], [], []
 for epoch in tqdm(range(num_epochs)):
     # Train
     train_loss = train_model(model, criterion, optimizer, train)
-    # Evaluate with test data
-    test_loss, labels, predicted_test = evaluate_model(model, criterion, test)
     # Evaluate with train data
-    train_loss, labels, predicted_train = evaluate_model(model, criterion, train)
+    train_loss, train_labels, train_predicted = evaluate_model(model, criterion, train)
+    # Evaluate with test data
+    test_loss, test_labels, test_predicted = evaluate_model(model, criterion, test)
     # Performance
-    performance_test = Performance(labels, predicted_test)
-    performance_train = Performance(labels, predicted_train)
+    train_performance = Performance(train_labels, train_predicted)
+    test_performance = Performance(test_labels, test_predicted)
     # Logging
-    logger.info(f'Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss}, Test Loss: {test_loss}, Test Accuracy: {performance_test.balanced_accuracy}, Train Accuracy: {performance_train.balanced_accuracy}')
-    #logger.info(f'Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss}, Test Loss: {test_loss}, Test Accuracy: {performance_test.balanced_accuracy}')
-    
-    # Append 
+    logger.info(f'Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss}, Test Loss: {test_loss}, Test Accuracy: {test_performance.balanced_accuracy}, Train Accuracy: {train_performance.balanced_accuracy}')
+    # Append
     train_losses.append(train_loss)
     test_losses.append(test_loss)
-    test_accuracies.append(performance_test.balanced_accuracy)
-    train_accuracies.append(performance_train.balanced_accuracy)
+    test_accuracies.append(test_performance.balanced_accuracy)
+    train_accuracies.append(train_performance.balanced_accuracy)
 
+# Save model    
+bacc = np.mean(test_accuracies[-10:])
+torch.save(model.state_dict(), f'models/{bacc:.2f}.pth')
+print(bacc)
 
-# Performance
-print(np.mean(test_accuracies[-10:]))
-print(performance_test.f1)
-print(performance_test.mcc)
-print(performance_test.confusion_matrix)
-performance_test.plot_confusion_matrix()
+# Plot confussion matrix
+test_performance.plot_confusion_matrix()
 
-# Plot loss
-plt.plot(train_losses, label='Train Loss')
-plt.plot(test_losses, label='Test Loss')
-plt.plot(test_accuracies, label='Test Balanced Accuracy')
-plt.xlabel('Epochs')
+# Plot losses
+plt.plot(train_losses)
+plt.plot(test_losses)
+plt.legend(['Train', 'Test'])
+plt.xlabel('Epoch')
 plt.ylabel('Loss')
-plt.legend()
-plt.show()
-plt.savefig('losses')
+plt.title('Losses')
+plt.savefig('losses.png')
 plt.clf()
+
+# Plot accuracies
+plt.plot(train_accuracies)
+plt.plot(test_accuracies)
+plt.legend(['Train', 'Test'])
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.title('Balanced Accuracies')
+plt.savefig('accuracies.png')
+plt.clf()
+
