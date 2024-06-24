@@ -67,12 +67,16 @@ class ContactMapPPI(ContactMap):
         p2_k_end = p2.domains['K-box'][1]
         return ContactMapPPI(self.matrix[p1_k_start:p1_k_end, p2_k_start:p2_k_end])
 
-    def plot(self, ppi: 'ProteinProtein'):
+    def plot(self, ppi: 'ProteinProtein', name: str = None):
+        # Determine protein lengths
+        p1_length = len(ppi.p1.mik) if 'IKC' not in ppi.p1.name else len(ppi.p1)
+        p2_length = len(ppi.p2.mik) if 'IKC' not in ppi.p2.name else len(ppi.p2)
+        ppi_length = p1_length + p2_length
         # Horizontal and vertical lines
-        plt.vlines(x = len(ppi.p1), ymin = 0, ymax = len(ppi), colors = 'black')
-        plt.hlines(y = len(ppi.p1), xmin = 0, xmax = len(ppi), colors = 'black')
+        plt.vlines(x = p1_length, ymin = 0, ymax = ppi_length, colors = 'black')
+        plt.hlines(y = p1_length, xmin = 0, xmax = ppi_length, colors = 'black')
         # Ticks
-        lengths = np.cumsum([0, len(ppi.p1), len(ppi.p2)])
+        lengths = np.cumsum([0, p1_length, p2_length])
         ticks = (lengths[1:] + lengths[:-1])/2
         names = [ppi.p1.name, ppi.p2.name]
         plt.xticks(ticks, names)
@@ -81,7 +85,7 @@ class ContactMapPPI(ContactMap):
         plt.title(f'{ppi.p1.name}-{ppi.p2.name} Contact Map')
         plt.imshow(self.matrix, cmap = "Greys", vmin = self.matrix.min(), vmax = self.matrix.max())
         plt.show()
-        plt.savefig('test.png')
+        plt.savefig(f'{name if name else "contactmapppi"}.png')
     
 
 if __name__ == "__main__":

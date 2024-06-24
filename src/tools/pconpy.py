@@ -12,7 +12,7 @@ class PConPy:
 
     def __init__(
             self, 
-            map_type: Literal['cmap', 'dmap', 'hbmap'], 
+            map_type: Literal['cmap', 'dmap'], 
             pdb: str,
             measure: Literal['CA', 'CB', 'cmass', 'sccmass', 'minvdw'],
             distance: float = None
@@ -43,8 +43,18 @@ class PConPy:
 
 if __name__ == '__main__':
     from src.entities.protein_protein import ProteinProtein
-    p = ProteinProtein('A0A0E4AZI0', 'A0A0E4AZI0')
-    pcon = PConPy('dmap', p.pdb, 'sccmass')
-    matrix = pcon.map()
-    matrix = pcon.standarize(matrix)
+    from src.entities.protein import Protein
+    from src.entities.contact_map import ContactMapPPI
+    p = Protein('A0A0E4AZI0')
+    ppi = ProteinProtein(p, p)
+
+    for measure in ['CA', 'CB', 'cmass', 'sccmass', 'minvdw']:
+        pcon = PConPy('cmap', ppi.pdb, measure)
+        matrix = pcon.map()
+        cmap = pcon.standarize(matrix)
+        ContactMapPPI(cmap).plot(ppi, measure)
+
+
+
+
     
